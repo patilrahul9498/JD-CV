@@ -195,11 +195,31 @@ export default function App() {
       clearInterval(mockProgressInterval);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Analyzing resumes failed. Check API connectivity.");
+        const responseText = await response.text().catch(() => "");
+        let errorMsg = "Analyzing resumes failed. Check API connectivity.";
+        try {
+          const parsedError = JSON.parse(responseText);
+          if (parsedError.error) {
+            errorMsg = parsedError.error;
+          }
+        } catch {
+          if (responseText && responseText.trim().length > 0 && responseText.trim().length < 250) {
+            errorMsg = responseText.trim();
+          } else if (responseText.includes("<!DOCTYPE") || responseText.includes("<html")) {
+            errorMsg = "Server encounter error (returned HTML markup). Please verify server logs or restart.";
+          }
+        }
+        throw new Error(errorMsg);
       }
 
-      const responseData = await response.json();
+      const responseText = await response.text();
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (jsonErr) {
+        console.error("Failed to parse response as JSON:", responseText);
+        throw new Error("The server returned an invalid format instead of structured evaluation JSON.");
+      }
       setProgressPercent(100);
       setStatusMessage("Analysis complete!");
 

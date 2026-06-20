@@ -2,16 +2,12 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import multer from "multer";
-import * as _pdf from "pdf-parse";
-import * as _mammoth from "mammoth";
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
-
-// Fix default imports for ESM/CommonJS compatibility
-const pdf = (_pdf as any).default || _pdf;
-const mammoth = (_mammoth as any).default || _mammoth;
 
 // In-memory cache for raw document downloads
 const resumeFileCache = new Map<string, { buffer: Buffer; mimeType: string; originalName: string }>();
@@ -81,7 +77,8 @@ async function startServer() {
           const extension = file.originalname.slice(((file.originalname.lastIndexOf(".") - 1) >>> 0) + 2).toLowerCase();
           
           if (file.mimetype === "application/pdf" || extension === "pdf") {
-            const parsed = await pdf(file.buffer);
+            const parser = new PDFParse({ data: file.buffer });
+            const parsed = await parser.getText();
             textContent = parsed.text || "";
           } else if (
             file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || 
