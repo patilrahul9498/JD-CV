@@ -10,15 +10,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // In-memory cache for raw document downloads
-const resumeFileCache = new Map<string, { buffer: Buffer; mimeType: string; originalName: string }>();
+export const resumeFileCache = new Map<string, { buffer: Buffer; mimeType: string; originalName: string }>();
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
 
-  // Middleware
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+// Middleware
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // Multer in-memory upload configuration
   const upload = multer({
@@ -227,6 +225,10 @@ Return responses in strict JSON matching the requested schema.`,
     res.send(item.buffer);
   });
 
+// Async wrapper to launch Vite and local listen block
+export async function startServer() {
+  const PORT = 3000;
+
   // Vite Assets Dev vs Production serving
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -248,4 +250,6 @@ Return responses in strict JSON matching the requested schema.`,
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
